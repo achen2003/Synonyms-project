@@ -1,0 +1,145 @@
+import math
+
+
+def norm(vec):
+
+    sum_of_squares = 0.0
+    for x in vec:
+        sum_of_squares += vec[x] * vec[x]
+
+    return math.sqrt(sum_of_squares)
+
+
+def cosine_similarity(vec1, vec2):
+    similarity = 0
+    magnitude1, magnitude2 = 0, 0
+
+    for i in range(len(vec1)):
+        values1 = vec1.values()
+        values1_l = list(values1)
+
+    for i in range(len(vec2)):
+        values2 = vec2.values()
+        values2_l = list(values2)
+
+    for i in range(len(values1_l)):
+        magnitude1 += (values1_l[i])**2
+    for i in range(len(values2_l)):
+        magnitude2 += (values2_l[i])**2
+
+    for key1 in vec1:
+        for key2 in vec2:
+            if key1 == key2:
+                similarity += ((vec1[key1] * vec2[key2])/math.sqrt(magnitude1 * magnitude2))
+
+    return similarity
+
+##
+
+def build_semantic_descriptors(sentences):
+
+    semantic_descriptor = {}
+    unique_word_list = []
+
+    for i in sentences:
+        for j in i:
+            if j not in unique_word_list:
+                unique_word_list.append(j)
+
+        for k in unique_word_list:
+            for l in unique_word_list:
+                if k not in semantic_descriptor.keys():
+                    semantic_descriptor[k] = {}
+                if k != l and l not in semantic_descriptor[k].keys() and k in i:
+                    semantic_descriptor[k][l] = 1
+                elif l in semantic_descriptor[k].keys():
+                    semantic_descriptor[k][l] += 1
+        unique_word_list = []
+
+    return semantic_descriptor
+
+##
+
+def build_semantic_descriptors_from_files(filenames):
+
+    all_sentences = []
+    punctuation1 = [",", "-", "--", ":", ";", "\n"]
+    punctuation2 = ["!", "?"]
+
+    for i in filenames:
+        sentence_list = []
+        file = open(i, "r", encoding="latin1")
+        file = file.read()
+        file = file.lower()
+        for j in punctuation1:
+            file = file.replace(j, " ")
+        for k in punctuation2:
+            file = file.replace(k, ".")
+        split_file = file.split(".")
+        for l in split_file:
+            sentence_list.append(l.split())
+        all_sentences += sentence_list
+
+    return build_semantic_descriptors(all_sentences)
+
+##
+
+def most_similar_word(word, choices, semantic_descriptors, similarity_fn):
+    word = word.lower()
+    ms_word = choices[0]
+    max_similarity = -1
+    similarity = 0
+
+    if word not in semantic_descriptors:
+        return ms_word
+    else:
+        for i in range(len(choices)):
+            choices[i] = choices[i].lower()
+            if choices[i] not in semantic_descriptors:
+                similarity = -1
+                # print("not in: ", choices[i])
+            else:
+                similarity = similarity_fn(semantic_descriptors[word], semantic_descriptors[choices[i]])
+                # print("in: ", choices[i], similarity)
+            if similarity > max_similarity:
+                max_similarity = similarity
+                ms_word = choices[i]
+
+    return ms_word
+
+##
+
+def run_similarity_test(filename, semantic_descriptors, similarity_fn):
+    file = open(filename, "r", encoding="latin1")
+    file = file.read()
+    file = file.lower()
+    sentence_list = file.split("\n")
+    full_sentence_counter = 0
+    correct_counter = 0.0
+
+    for j in sentence_list:
+        if j != "":
+            full_sentence_counter += 1
+            j = j.split()
+            most_similar = most_similar_word(j[0], j[2:], semantic_descriptors, similarity_fn)
+            # print("most similar:", most_similar)
+            if most_similar == j[1]:
+                correct_counter += 1
+            # else:
+                # print("incorrect:", most_similar, j[1])
+
+    return (correct_counter/full_sentence_counter) * 100
+
+# sem_descriptors = build_semantic_descriptors_from_files(["sample_case.txt"])
+# print(sem_descriptors)
+# res = run_similarity_test("sample_test.txt", sem_descriptors, cosine_similarity)
+# print(res, "of the guesses were correct")
+
+# sem_descriptors = build_semantic_descriptors_from_files(["wp.txt", "sw.txt"])
+# res = run_similarity_test("test.txt", sem_descriptors, cosine_similarity)
+# print(res, "of the guesses were correct")
+
+
+
+
+
